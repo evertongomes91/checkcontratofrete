@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel de Contratos GW x Protheus</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    .indicadores {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      min-width: 200px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background: #2f80ed;
+      color: white;
+    }
+    .pendente {
+      background-color: #ffe5e5;
+    }
+  </style>
+</head>
+<body>
+
+<h1>📦 Painel de Contratos GW x Protheus</h1>
+
+<div class="indicadores">
+  <div class="card">
+    <strong>Total GW</strong>
+    <div id="total-gw">0</div>
+  </div>
+  <div class="card">
+    <strong>Não sincronizados</strong>
+    <div id="total-pendente">0</div>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Contrato</th>
+      <th>Data</th>
+      <th>Filial</th>
+      <th>Contratado</th>
+      <th>Valor</th>
+    </tr>
+  </thead>
+  <tbody id="tabela-contratos"></tbody>
+</table>
+
+<script>
+async function carregarCSV(url) {
+  const resposta = await fetch(url);
+  const texto = await resposta.text();
+  const linhas = texto.trim().split('\n');
+  const cabecalho = linhas.shift().split(',');
+  return linhas.map(linha => {
+    const dados = linha.split(',');
+    let obj = {};
+    cabecalho.forEach((col, i) => obj[col] = dados[i]);
+    return obj;
+  });
+}
+
+async function iniciarPainel() {
+  const gw = await carregarCSV('dados-gw.csv');
+  const protheus = await carregarCSV('dados-protheus.csv');
+
+  const contratosProtheus = new Set(protheus.map(p => p.contrato));
+
+  const pendentes = gw.filter(g => !contratosProtheus.has(g.contrato));
+
+  document.getElementById('total-gw').textContent = gw.length;
+  document.getElementById('total-pendente').textContent = pendentes.length;
+
+  const tbody = document.getElementById('tabela-contratos');
+
+  pendentes.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.classList.add('pendente');
+    tr.innerHTML = `
+      <td>${c.contrato}</td>
+      <td>${c.data}</td>
+      <td>${c.filial}</td>
+      <td>${c.contratado}</td>
+      <td>R$ ${c.valor}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+iniciarPainel();
+</script>
+
+</body>
+</html>
