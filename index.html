@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Check Contratos de Frete — GW × Protheus</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2333;
+    --border: #2a3045;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --accent: #3b82f6;
+    --danger: #ef4444;
+    --danger-soft: rgba(239,68,68,0.12);
+    --success: #22c55e;
+    --success-soft: rgba(34,197,94,0.10);
+    --warning: #f59e0b;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* Header */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    background: var(--surface);
+  }
+  .header-left h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; }
+  .header-left p { font-size: 0.78rem; color: var(--muted); margin-top: 3px; font-family: var(--mono); }
+  .badge-pending {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border: 1px solid rgba(239,68,68,0.25);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* Cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .card {
+    background: var(--surface);
+    padding: 1.25rem 1.5rem;
+  }
+  .card .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-family: var(--mono); }
+  .card .value { font-size: 1.75rem; font-weight: 300; letter-spacing: -0.03em; }
+  .card.c-danger .value { color: var(--danger); }
+  .card.c-success .value { color: var(--success); }
+  .card.c-warn .value { color: var(--warning); font-size: 1.35rem; }
+  .card .sub { font-size: 0.72rem; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
+
+  /* Body layout */
+  .body { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 200px); }
+
+  /* Sidebar */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    padding: 1.25rem;
+  }
+  .sidebar-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-family: var(--mono); margin-bottom: 1rem; }
+  .filial-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 6px; cursor: pointer;
+    margin-bottom: 3px; transition: background 0.15s;
+    border: 1px solid transparent;
+  }
+  .filial-item:hover { background: var(--surface2); }
+  .filial-item.active { background: var(--surface2); border-color: var(--border); }
+  .filial-bar-wrap { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .filial-bar { height: 100%; border-radius: 2px; background: var(--danger); }
+  .filial-name { font-size: 0.78rem; min-width: 80px; }
+  .filial-count { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); min-width: 22px; text-align: right; }
+
+  .sidebar-divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+  /* Main */
+  .main { padding: 1.25rem 1.5rem; }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .toolbar input {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 12px; color: var(--text);
+    font-family: var(--mono); font-size: 0.8rem; outline: none;
+    transition: border-color 0.15s;
+  }
+  .toolbar input:focus { border-color: var(--accent); }
+  .toolbar input::placeholder { color: var(--muted); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  thead { background: var(--surface2); }
+  th {
+    padding: 9px 12px; text-align: left; font-weight: 500;
+    font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--muted);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  td {
+    padding: 9px 12px; border-bottom: 1px solid var(--border);
+    color: var(--text); white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; max-width: 200px;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+  .num { font-family: var(--mono); font-weight: 500; color: var(--accent); }
+  .valor { font-family: var(--mono); text-align: right; }
+  td.valor { color: var(--warning); }
+
+  /* Pager */
+  .pager {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0 0; font-size: 0.75rem; color: var(--muted); font-family: var(--mono);
+  }
+  .pager-btns { display: flex; gap: 6px; }
+  .pager-btns button {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: 5px; padding: 5px 12px;
+    font-family: var(--mono); font-size: 0.72rem; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .pager-btns button:hover:not(:disabled) { border-color: var(--accent); background: var(--surface2); }
+  .pager-btns button:disabled { opacity: 0.35; cursor: default; }
+
+  /* Empty state */
+  .empty { padding: 3rem; text-align: center; color: var(--muted); font-family: var(--mono); font-size: 0.8rem; }
+
+  @media (max-width: 768px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .body { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    .header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Check Contratos de Frete &mdash; GW × Protheus</h1>
+    <p>Contratos emitidos no GW não sincronizados no Protheus &middot; Atualizado em 30/04/2026</p>
+  </div>
+  <div class="badge-pending">⚠ 186 contratos pendentes</div>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <div class="label">Total GW</div>
+    <div class="value">1.120</div>
+    <div class="sub">contratos únicos emitidos</div>
+  </div>
+  <div class="card c-success">
+    <div class="label">Sincronizados</div>
+    <div class="value">934</div>
+    <div class="sub">83,4% do total</div>
+  </div>
+  <div class="card c-danger">
+    <div class="label">Não sincronizados</div>
+    <div class="value">186</div>
+    <div class="sub">16,6% pendente</div>
+  </div>
+  <div class="card c-warn">
+    <div class="label">Valor pendente</div>
+    <div class="value">R$ 934.178,85</div>
+    <div class="sub">a sincronizar no Protheus</div>
+  </div>
+</div>
+
+<div class="body">
+  <div class="sidebar">
+    <div class="sidebar-title">Filial</div>
+    <div id="filial-list"></div>
+    <hr class="sidebar-divider">
+    <div style="font-size:0.7rem;color:var(--muted);font-family:var(--mono);line-height:1.6">
+      Clique em uma filial para filtrar. Clique novamente para limpar.
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Buscar contrato, contratado, motorista...">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Contrato</th>
+            <th>Data</th>
+            <th>Filial</th>
+            <th>Contratado</th>
+            <th>Motorista</th>
+            <th style="text-align:right">Valor (R$)</th>
+            <th>Veículo</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <span id="pager-info"></span>
+      <div class="pager-btns">
+        <button id="btn-prev" onclick="changePage(-1)">← Anterior</button>
+        <button id="btn-next" onclick="changePage(1)">Próxima →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const byFilial = [
+  {f:"FILIAL BA",q:93,v:571826.08},
+  {f:"MATRIZ",q:66,v:160646.27},
+  {f:"FILIAL MT",q:14,v:128469.48},
+  {f:"FILIAL SP",q:3,v:52900.00},
+  {f:"FILIAL PB",q:8,v:12336.90},
+  {f:"FILIAL RN",q:2,v:8000.12}
+];
+
+const rows = [{"c":"54510","d":"01/04/2026","f":"FILIAL MT","ct":"MARCOS HILDENBRANDT E OUTRO","m":"SIDILAR MEDEIROS LAIGNER","v":13358.4,"t":"BITREM 2 EIXO DUPLO"},{"c":"54511","d":"01/04/2026","f":"FILIAL MT","ct":"AJG TRANSPORTES RODOVIARIOS LTDA","m":"MIGUEL ANGEL CALABRESE","v":22200.96,"t":"BITREM 2 EIXO DUPLO"},{"c":"54512","d":"01/04/2026","f":"FILIAL BA","ct":"PMSD TRANSPORTES LTDA","m":"DIEGO MARTIM SILVA SOUZA","v":1215.51,"t":"CARRETA"},{"c":"54513","d":"01/04/2026","f":"FILIAL MT","ct":"GA ARMAZENS E TRANSPORTES LTDA","m":"WANDERSON MICHEL PEREIRA","v":7877.10,"t":"BITREM 2 EIXO DUPLO"},{"c":"54514","d":"01/04/2026","f":"FILIAL MT","ct":"MARQUES E VIEIRA TRANSPORTES RODOVIARIOS LTDA","m":"RODRIGO GUANIERI PEREIRA","v":18284.72,"t":"CARRETA"},{"c":"54516","d":"01/04/2026","f":"FILIAL MT","ct":"RODOJUSTI TRANSPORTES E COMERCIO EIRELI","m":"GILSON DEFREYN","v":21962.67,"t":"BITREM 2 EIXO DUPLO"},{"c":"54517","d":"01/04/2026","f":"FILIAL MT","ct":"M. Z BERTI","m":"MARCOS RIBEIRO DE OLIVEIRA","v":19979.40,"t":"BITREM 2 EIXO DUPLO"},{"c":"54518","d":"01/04/2026","f":"FILIAL MT","ct":"C TEIXEIRA DE MATTOS TRANSPORTES","m":"RAFAEL TEIXEIRA DE MATTOS","v":21134.40,"t":"BITREM 2 EIXO DUPLO"},{"c":"54519","d":"01/04/2026","f":"FILIAL MT","ct":"CARLINE APARECIDA ZUGE POMPERMAIER","m":"DANILO BRUNO SOUZA FERNANDES","v":1700.60,"t":"BITREM 2 EIXO DUPLO"},{"c":"54520","d":"01/04/2026","f":"FILIAL MT","ct":"DIRCEU MARCONDES DOS SANTOS","m":"DIRCEU MARCONDES DOS SANTOS","v":1956.90,"t":"BITREM 2 EIXO DUPLO"},{"c":"54523","d":"01/04/2026","f":"FILIAL MT","ct":"ODAIR FERREIRA DA SILVA","m":"ODAIR FERREIRA DA SILVA","v":5793.80,"t":"BITREM 07 EIXOS"},{"c":"54524","d":"01/04/2026","f":"FILIAL MT","ct":"JULIO CESAR TEIXEIRA LTDA","m":"MARCOS LEANDRO BORGES BICHESLKI","v":20634.96,"t":"CARRETA"},{"c":"54525","d":"01/04/2026","f":"FILIAL MT","ct":"LEANDRO CLAUDINO DE OLIVEIRA","m":"LEANDRO CLAUDINO DE OLIVEIRA","v":5278.50,"t":"VANDERLEIA"},{"c":"54526","d":"01/04/2026","f":"FILIAL MT","ct":"61.988.009 CLECIO LUIZ DOS SANTOS","m":"LUIZ KALEO DOS SANTOS","v":21826.74,"t":"CARRETA"},{"c":"54527","d":"01/04/2026","f":"FILIAL MT","ct":"ANA P D DA COSTA COMERCIO","m":"LUIS CARLOS NOLLI","v":24671.89,"t":"BITREM 2 EIXO DUPLO"},{"c":"54528","d":"01/04/2026","f":"FILIAL PB","ct":"JEFFERSON OLIVEIRA DA SILVA","m":"JANILSON OLIVEIRA DA SILVA","v":1615.17,"t":"CARRETA"},{"c":"54529","d":"01/04/2026","f":"MATRIZ","ct":"ALCION FRANCISCO BARBOSA","m":"ALCION FRANCISCO BARBOSA","v":865.00,"t":"CARRETA"},{"c":"54530","d":"01/04/2026","f":"FILIAL MT","ct":"KENIO EDUARDO","m":"KENIO EDUARDO DE OLIVEIRA","v":5140.00,"t":"CARRETA"},{"c":"54531","d":"01/04/2026","f":"MATRIZ","ct":"RAIMUNDO JOSE PEREIRA OLIVEIRA","m":"RAIMUNDO JOSE PEREIRA OLIVEIRA","v":9131.20,"t":"CARRETA"},{"c":"54532","d":"01/04/2026","f":"FILIAL MT","ct":"JUCELINO LUIZ MACHADO","m":"DHONE DEFREIN CORREA","v":24628.50,"t":"CARRETA"},{"c":"54533","d":"01/04/2026","f":"FILIAL MT","ct":"G2 TRANSPORTES LTDA","m":"RONDINELLE THIAGO DOS SANTOS BARROS","v":4986.20,"t":"BITREM 07 EIXOS"},{"c":"54534","d":"01/04/2026","f":"FILIAL SP","ct":"R MOMENTE NOGUEIRA TRANSPORTES","m":"ADRIANO BOGAZ SILVA","v":6000.00,"t":"CARRETA"},{"c":"54535","d":"01/04/2026","f":"MATRIZ","ct":"ELCIO VITORINO VANDERLEI","m":"ELCIO VITORINO VANDERLEI","v":1004.00,"t":"CARRETA"},{"c":"54536","d":"01/04/2026","f":"FILIAL MT","ct":"A P TREIN COMERCIO","m":"PAULO SERGIO MAAS","v":24422.40,"t":"BITREM 2 EIXO DUPLO"},{"c":"54537","d":"01/04/2026","f":"FILIAL MT","ct":"RODOJUSTI TRANSPORTES E COMERCIO EIRELI","m":"GILSON DEFREYN","v":21962.67,"t":"BITREM 2 EIXO DUPLO"},{"c":"54538","d":"01/04/2026","f":"FILIAL MT","ct":"RUBENS ALVES SILVA","m":"RUBENS ALVES SILVA","v":5020.70,"t":"BITREM 2 EIXO DUPLO"},{"c":"54545","d":"01/04/2026","f":"FILIAL MT","ct":"RODOCRIS TRANSPORTES LTDA","m":"PEDRO DO NASCIMENTO ROSA","v":26463.82,"t":"CARRETA"},{"c":"54546","d":"01/04/2026","f":"FILIAL BA","ct":"JOAO LAZARO DO SACRAMENTO FILHO","m":"JOAO LAZARO DO SACRAMENTO FILHO","v":1300.00,"t":"CAVALO TRUCADO"},{"c":"54547","d":"01/04/2026","f":"FILIAL MT","ct":"J. DA S. TAVARES","m":"JOILSON CEDORAK","v":10607.98,"t":"CARRETA"},{"c":"54548","d":"01/04/2026","f":"MATRIZ","ct":"ELCIO VITORINO VANDERLEI","m":"ELCIO VITORINO VANDERLEI","v":965.00,"t":"CARRETA"},{"c":"54549","d":"01/04/2026","f":"FILIAL MT","ct":"TRANSPORTADORA NEW JERSEY LTDA","m":"RENATO EDUARDO FOLCK","v":4000.00,"t":"CARRETA"},{"c":"54550","d":"01/04/2026","f":"FILIAL MT","ct":"TRANSPORTADORA NEW JERSEY LTDA","m":"EMERSON JOSE GOMES DE AMORIM","v":4000.00,"t":"CARRETA"},{"c":"54551","d":"01/04/2026","f":"FILIAL MT","ct":"TRANSPORTADORA FASSIL LTDA","m":"AILTON RODRIGUES CRUZ FARIAS","v":14736.97,"t":"CARRETA"},{"c":"54552","d":"01/04/2026","f":"FILIAL MT","ct":"SENES TRANSPORTES LTDA","m":"CLAUDIO ROBERTO OLIMPIO DA ROCHA","v":23930.00,"t":"CARRETA"},{"c":"54553","d":"01/04/2026","f":"FILIAL MT","ct":"VAGNER ALFREDO OLIVOTO CARVALHO LTDA","m":"DARSON VIANA BARROS","v":13496.90,"t":"CARRETA"},{"c":"54554","d":"01/04/2026","f":"FILIAL SP","ct":"OTANEI SILVA DE SOUZA","m":"OTANEI SILVA DE SOUZA","v":3300.00,"t":"CARRETA"},{"c":"54555","d":"01/04/2026","f":"FILIAL MT","ct":"FERREIRA E ADOLFO TRANSPORTES LTDA","m":"MAURO SILVA DOS SANTOS","v":23340.00,"t":"CARRETA"},{"c":"54556","d":"01/04/2026","f":"FILIAL MT","ct":"GILMAR E RODRIGO TRANSPORTES LTDA","m":"LEANDRO MARCELO RIBEIRO GONCALVES","v":24639.71,"t":"BITREM 2 EIXO DUPLO"},{"c":"54566","d":"03/04/2026","f":"FILIAL BA","ct":"ANDERSON JOSE SAMPAIO DE SOUZA","m":"ANDERSON JOSE SAMPAIO DE SOUZA","v":1700.00,"t":"CARRETA"},{"c":"54568","d":"03/04/2026","f":"FILIAL BA","ct":"PAULO VICTOR RIBEIRO CAVALCANTE","m":"PAULO VICTOR RIBEIRO CAVALCANTE","v":1450.00,"t":"CARRETA"},{"c":"54569","d":"03/04/2026","f":"FILIAL BA","ct":"SEBASTIAO ALVES DE JESUS","m":"SEBASTIAO ALVES DE JESUS","v":1500.00,"t":"CARRETA"},{"c":"54697","d":"07/04/2026","f":"FILIAL BA","ct":"JOSE AILTON VILAS BOAS DA CONCEICAO","m":"JOSE AILTON VILAS BOAS DA CONCEICAO","v":1800.00,"t":"CARRETA"},{"c":"54716","d":"08/04/2026","f":"FILIAL BA","ct":"CLEITON DOS SANTOS PINHEIRO","m":"CLEITON DOS SANTOS PINHEIRO","v":1350.00,"t":"CARRETA"},{"c":"54720","d":"08/04/2026","f":"FILIAL BA","ct":"ISAIAS SANTOS LIMA","m":"ISAIAS SANTOS LIMA","v":1500.00,"t":"CARRETA"},{"c":"54721","d":"08/04/2026","f":"FILIAL BA","ct":"EDNEI SOUZA DE JESUS","m":"EDNEI SOUZA DE JESUS","v":1500.00,"t":"CARRETA"},{"c":"54722","d":"08/04/2026","f":"FILIAL BA","ct":"EDILSON LIMA SOUZA","m":"EDILSON LIMA SOUZA","v":1600.00,"t":"CARRETA"},{"c":"54723","d":"08/04/2026","f":"FILIAL BA","ct":"ERIVAL BISPO DE JESUS","m":"ERIVAL BISPO DE JESUS","v":1600.00,"t":"CARRETA"},{"c":"54725","d":"08/04/2026","f":"FILIAL BA","ct":"ADEILSON ALVES DOS SANTOS","m":"ADEILSON ALVES DOS SANTOS","v":1600.00,"t":"CARRETA"},{"c":"54751","d":"09/04/2026","f":"FILIAL BA","ct":"EDVALDO NASCIMENTO DOS SANTOS","m":"EDVALDO NASCIMENTO DOS SANTOS","v":1600.00,"t":"CARRETA"},{"c":"54758","d":"10/04/2026","f":"FILIAL BA","ct":"CARLOS AUGUSTO SILVA FERREIRA","m":"CARLOS AUGUSTO SILVA FERREIRA","v":1800.00,"t":"CARRETA"},{"c":"54778","d":"11/04/2026","f":"FILIAL BA","ct":"JOSE RAIMUNDO CALIXTO DO NASCIMENTO","m":"JOSE RAIMUNDO CALIXTO DO NASCIMENTO","v":1350.00,"t":"CARRETA"},{"c":"54783","d":"11/04/2026","f":"FILIAL BA","ct":"EDILSON SOUSA DOS SANTOS","m":"EDILSON SOUSA DOS SANTOS","v":1600.00,"t":"CARRETA"},{"c":"54808","d":"14/04/2026","f":"FILIAL BA","ct":"ERICA FATIMA SOARES DA SILVA","m":"ERICA FATIMA SOARES DA SILVA","v":1650.00,"t":"CARRETA"},{"c":"54809","d":"14/04/2026","f":"FILIAL BA","ct":"NILSON FERREIRA DO NASCIMENTO","m":"NILSON FERREIRA DO NASCIMENTO","v":1650.00,"t":"CARRETA"},{"c":"54810","d":"14/04/2026","f":"FILIAL BA","ct":"PAULO SERGIO DOS SANTOS LIMA","m":"PAULO SERGIO DOS SANTOS LIMA","v":1650.00,"t":"CARRETA"},{"c":"54820","d":"14/04/2026","f":"FILIAL BA","ct":"GELZIVALDO RIBEIRO LIMA","m":"GELZIVALDO RIBEIRO LIMA","v":1600.00,"t":"CARRETA"},{"c":"54831","d":"15/04/2026","f":"FILIAL BA","ct":"JOSELI OLIVEIRA DOS SANTOS","m":"JOSELI OLIVEIRA DOS SANTOS","v":1650.00,"t":"CARRETA"},{"c":"54867","d":"16/04/2026","f":"FILIAL BA","ct":"GILDO SANTOS MAGALHAES","m":"GILDO SANTOS MAGALHAES","v":1800.00,"t":"CARRETA"},{"c":"54871","d":"16/04/2026","f":"FILIAL BA","ct":"DIEGO OLIVEIRA MELO","m":"DIEGO OLIVEIRA MELO","v":1800.00,"t":"CARRETA"},{"c":"54885","d":"17/04/2026","f":"FILIAL BA","ct":"MARCOS VINICIUS DOS SANTOS","m":"MARCOS VINICIUS DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"54890","d":"17/04/2026","f":"FILIAL BA","ct":"MARCOS AURELIO RODRIGUES","m":"MARCOS AURELIO RODRIGUES","v":1650.00,"t":"CARRETA"},{"c":"54891","d":"17/04/2026","f":"FILIAL BA","ct":"PAULO JOSE SANTOS LIMA","m":"PAULO JOSE SANTOS LIMA","v":1800.00,"t":"CARRETA"},{"c":"54900","d":"22/04/2026","f":"FILIAL BA","ct":"PAULO SERGIO DOS SANTOS LIMA","m":"PAULO SERGIO DOS SANTOS LIMA","v":1650.00,"t":"CARRETA"},{"c":"54913","d":"22/04/2026","f":"FILIAL BA","ct":"HELILTON SILVA SANTOS","m":"HELILTON SILVA SANTOS","v":1800.00,"t":"CARRETA"},{"c":"54914","d":"22/04/2026","f":"FILIAL BA","ct":"JOSE BENEDITO DOS SANTOS","m":"JOSE BENEDITO DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"54915","d":"22/04/2026","f":"FILIAL BA","ct":"ERICA FATIMA SOARES DA SILVA","m":"ERICA FATIMA SOARES DA SILVA","v":1650.00,"t":"CARRETA"},{"c":"54940","d":"23/04/2026","f":"FILIAL BA","ct":"JOSELI OLIVEIRA DOS SANTOS","m":"JOSELI OLIVEIRA DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"54945","d":"23/04/2026","f":"FILIAL BA","ct":"JAQUES AUGUSTO SILVA RAMOS","m":"JAQUES AUGUSTO SILVA RAMOS","v":1650.00,"t":"CARRETA"},{"c":"54953","d":"23/04/2026","f":"FILIAL BA","ct":"ANDRE LUIS CONCEICAO DANTAS","m":"ANDRE LUIS CONCEICAO DANTAS","v":1800.00,"t":"CARRETA"},{"c":"54976","d":"24/04/2026","f":"FILIAL BA","ct":"ALILSON FERREIRA DO NASCIMENTO","m":"ALILSON FERREIRA DO NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"54987","d":"24/04/2026","f":"FILIAL BA","ct":"ANTONIO NUNES SOARES NETO","m":"ANTONIO NUNES SOARES NETO","v":1800.00,"t":"CARRETA"},{"c":"55008","d":"25/04/2026","f":"FILIAL BA","ct":"PAULO JOSE SANTOS LIMA","m":"PAULO JOSE SANTOS LIMA","v":1800.00,"t":"CARRETA"},{"c":"55009","d":"25/04/2026","f":"FILIAL BA","ct":"MARCOS AURELIO RODRIGUES","m":"MARCOS AURELIO RODRIGUES","v":1650.00,"t":"CARRETA"},{"c":"55012","d":"25/04/2026","f":"FILIAL BA","ct":"HELILTON SILVA SANTOS","m":"HELILTON SILVA SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55016","d":"25/04/2026","f":"FILIAL BA","ct":"VALDECY RIBEIRO COSTA","m":"VALDECY RIBEIRO COSTA","v":1800.00,"t":"CARRETA"},{"c":"55030","d":"26/04/2026","f":"FILIAL BA","ct":"JOSE AILTON VILAS BOAS DA CONCEICAO","m":"JOSE AILTON VILAS BOAS DA CONCEICAO","v":1800.00,"t":"CARRETA"},{"c":"55038","d":"28/04/2026","f":"FILIAL BA","ct":"JULIO CESAR ALVES DOS SANTOS","m":"JULIO CESAR ALVES DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55043","d":"28/04/2026","f":"FILIAL BA","ct":"MARCOS VINICIUS DOS SANTOS","m":"MARCOS VINICIUS DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55046","d":"28/04/2026","f":"FILIAL BA","ct":"ANDRE LUIS CONCEICAO DANTAS","m":"ANDRE LUIS CONCEICAO DANTAS","v":1800.00,"t":"CARRETA"},{"c":"55049","d":"28/04/2026","f":"FILIAL BA","ct":"JOSELI OLIVEIRA DOS SANTOS","m":"JOSELI OLIVEIRA DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55056","d":"28/04/2026","f":"MATRIZ","ct":"JOSE PEREIRA FILHO","m":"JOSE PEREIRA FILHO","v":865.00,"t":"CARRETA"},{"c":"55067","d":"29/04/2026","f":"FILIAL BA","ct":"ANTONIO NUNES SOARES NETO","m":"ANTONIO NUNES SOARES NETO","v":1800.00,"t":"CARRETA"},{"c":"55070","d":"29/04/2026","f":"FILIAL BA","ct":"EDVALDO NASCIMENTO DOS SANTOS","m":"EDVALDO NASCIMENTO DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55073","d":"29/04/2026","f":"FILIAL BA","ct":"LUIZ HENRIQUE DE SALES RODRIGUES","m":"LUIZ HENRIQUE DE SALES RODRIGUES","v":1800.00,"t":"CARRETA"},{"c":"55082","d":"29/04/2026","f":"MATRIZ","ct":"JOAO MARIA PEREIRA","m":"JOAO MARIA PEREIRA","v":865.00,"t":"CARRETA"},{"c":"55087","d":"29/04/2026","f":"FILIAL PB","ct":"GERALDO NASCIMENTO DE MORAIS","m":"GERALDO NASCIMENTO DE MORAIS","v":1495.80,"t":"CARRETA"},{"c":"55107","d":"29/04/2026","f":"FILIAL BA","ct":"CLEITON DOS SANTOS PINHEIRO","m":"CLEITON DOS SANTOS PINHEIRO","v":1800.00,"t":"CARRETA"},{"c":"55112","d":"29/04/2026","f":"FILIAL SP","ct":"NILTON DE ASSIS MORAES","m":"NILTON DE ASSIS MORAES","v":43600.00,"t":"CARRETA"},{"c":"55114","d":"29/04/2026","f":"FILIAL PB","ct":"GERALDO NASCIMENTO DE MORAIS","m":"GERALDO NASCIMENTO DE MORAIS","v":1495.80,"t":"CARRETA"},{"c":"55117","d":"29/04/2026","f":"MATRIZ","ct":"JOSE RAIMUNDO DO NASCIMENTO","m":"JOSE RAIMUNDO DO NASCIMENTO","v":865.00,"t":"CARRETA"},{"c":"55119","d":"29/04/2026","f":"FILIAL BA","ct":"PAULO VICTOR RIBEIRO CAVALCANTE","m":"PAULO VICTOR RIBEIRO CAVALCANTE","v":1800.00,"t":"CARRETA"},{"c":"55123","d":"29/04/2026","f":"FILIAL PB","ct":"FRANCISCO INACIO FELIX MEDEIROS","m":"FRANCISCO INACIO FELIX MEDEIROS","v":1495.80,"t":"CARRETA"},{"c":"55128","d":"29/04/2026","f":"FILIAL PB","ct":"ANTONIO PEREIRA DA SILVA SOBRINHO","m":"ANTONIO PEREIRA DA SILVA SOBRINHO","v":1495.80,"t":"CARRETA"},{"c":"55144","d":"29/04/2026","f":"FILIAL BA","ct":"ALAN SANTOS DA SILVA","m":"ALAN SANTOS DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55154","d":"29/04/2026","f":"FILIAL BA","ct":"JOSENILDO FERREIRA DE BRITO","m":"JOSENILDO FERREIRA DE BRITO","v":1800.00,"t":"CARRETA"},{"c":"55157","d":"29/04/2026","f":"MATRIZ","ct":"OZIELTON GOMES DE LIMA","m":"OZIELTON GOMES DE LIMA","v":865.00,"t":"CARRETA"},{"c":"55174","d":"29/04/2026","f":"FILIAL BA","ct":"JOSUELSON FERREIRA DE BRITO","m":"JOSUELSON FERREIRA DE BRITO","v":1800.00,"t":"CARRETA"},{"c":"55178","d":"29/04/2026","f":"FILIAL BA","ct":"ERINALDO SANTOS MENEZES","m":"ERINALDO SANTOS MENEZES","v":1800.00,"t":"CARRETA"},{"c":"55184","d":"29/04/2026","f":"FILIAL BA","ct":"RILDO CONCEICAO SANTOS","m":"RILDO CONCEICAO SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55186","d":"29/04/2026","f":"FILIAL BA","ct":"EDILSON LIMA SOUZA","m":"EDILSON LIMA SOUZA","v":1800.00,"t":"CARRETA"},{"c":"55187","d":"29/04/2026","f":"FILIAL BA","ct":"MARCOS VINICIUS SANTOS COSTA","m":"MARCOS VINICIUS SANTOS COSTA","v":1800.00,"t":"CARRETA"},{"c":"55188","d":"29/04/2026","f":"FILIAL BA","ct":"ALDECIR MARTINS DA SILVA","m":"ALDECIR MARTINS DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55191","d":"29/04/2026","f":"FILIAL BA","ct":"EVANDRO SANTOS RODRIGUES","m":"EVANDRO SANTOS RODRIGUES","v":1800.00,"t":"CARRETA"},{"c":"55197","d":"29/04/2026","f":"FILIAL BA","ct":"SEBASTIAO ALVES DE JESUS","m":"SEBASTIAO ALVES DE JESUS","v":1800.00,"t":"CARRETA"},{"c":"55204","d":"29/04/2026","f":"FILIAL BA","ct":"JOSE CARLOS OLIVEIRA DE FREITAS","m":"JOSE CARLOS OLIVEIRA DE FREITAS","v":1800.00,"t":"CARRETA"},{"c":"55208","d":"30/04/2026","f":"MATRIZ","ct":"LAECIO FERREIRA DE SOUZA","m":"LAECIO FERREIRA DE SOUZA","v":1038.00,"t":"CARRETA"},{"c":"55216","d":"30/04/2026","f":"FILIAL RN","ct":"CARLOS CESAR FERNANDES DE MELO","m":"CARLOS CESAR FERNANDES DE MELO","v":4000.06,"t":"CARRETA"},{"c":"55221","d":"30/04/2026","f":"MATRIZ","ct":"FRANCISCO HERCULANO DE ALMEIDA","m":"FRANCISCO HERCULANO DE ALMEIDA","v":1038.00,"t":"CARRETA"},{"c":"55226","d":"30/04/2026","f":"FILIAL BA","ct":"ALAN SANTOS DA SILVA","m":"ALAN SANTOS DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55227","d":"30/04/2026","f":"FILIAL BA","ct":"JOSENILDO FERREIRA DE BRITO","m":"JOSENILDO FERREIRA DE BRITO","v":1800.00,"t":"CARRETA"},{"c":"55228","d":"30/04/2026","f":"FILIAL BA","ct":"JOSUELSON FERREIRA DE BRITO","m":"JOSUELSON FERREIRA DE BRITO","v":1800.00,"t":"CARRETA"},{"c":"55229","d":"30/04/2026","f":"FILIAL BA","ct":"ERINALDO SANTOS MENEZES","m":"ERINALDO SANTOS MENEZES","v":1800.00,"t":"CARRETA"},{"c":"55232","d":"30/04/2026","f":"FILIAL BA","ct":"EVANDRO SANTOS RODRIGUES","m":"EVANDRO SANTOS RODRIGUES","v":1800.00,"t":"CARRETA"},{"c":"55249","d":"30/04/2026","f":"FILIAL BA","ct":"CLEITON DOS SANTOS PINHEIRO","m":"CLEITON DOS SANTOS PINHEIRO","v":1800.00,"t":"CARRETA"},{"c":"55255","d":"30/04/2026","f":"FILIAL BA","ct":"GILDO SANTOS MAGALHAES","m":"GILDO SANTOS MAGALHAES","v":1800.00,"t":"CARRETA"},{"c":"55257","d":"30/04/2026","f":"MATRIZ","ct":"LUCIANA MELO DE ANDRADE","m":"LUCIANA MELO DE ANDRADE","v":1248.00,"t":"CARRETA"},{"c":"55263","d":"30/04/2026","f":"FILIAL BA","ct":"JAQUES AUGUSTO SILVA RAMOS","m":"JAQUES AUGUSTO SILVA RAMOS","v":1800.00,"t":"CARRETA"},{"c":"55264","d":"30/04/2026","f":"MATRIZ","ct":"RIVONALDO PEREIRA DE MELO","m":"RIVONALDO PEREIRA DE MELO","v":1038.00,"t":"CARRETA"},{"c":"55272","d":"30/04/2026","f":"FILIAL RN","ct":"CARLOS AUGUSTO NOIA DE FREITAS","m":"CARLOS AUGUSTO NOIA DE FREITAS","v":4000.06,"t":"CARRETA"},{"c":"55284","d":"30/04/2026","f":"MATRIZ","ct":"RAIMUNDO NONATO RODRIGUES DE SOUSA","m":"RAIMUNDO NONATO RODRIGUES DE SOUSA","v":1248.00,"t":"CARRETA"},{"c":"55319","d":"30/04/2026","f":"FILIAL BA","ct":"PAULO JOSE SANTOS LIMA","m":"PAULO JOSE SANTOS LIMA","v":1800.00,"t":"CARRETA"},{"c":"55322","d":"30/04/2026","f":"FILIAL BA","ct":"RILDO CONCEICAO SANTOS","m":"RILDO CONCEICAO SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55324","d":"30/04/2026","f":"MATRIZ","ct":"WANDERLEY GOMES DE MELO","m":"WANDERLEY GOMES DE MELO","v":1248.00,"t":"CARRETA"},{"c":"55325","d":"30/04/2026","f":"FILIAL BA","ct":"ALUIZIO BISPO DA SILVA","m":"ALUIZIO BISPO DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55347","d":"30/04/2026","f":"FILIAL BA","ct":"PAULO VICTOR RIBEIRO CAVALCANTE","m":"PAULO VICTOR RIBEIRO CAVALCANTE","v":1800.00,"t":"CARRETA"},{"c":"55349","d":"30/04/2026","f":"FILIAL BA","ct":"MARCOS VINICIUS DOS SANTOS","m":"MARCOS VINICIUS DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55350","d":"30/04/2026","f":"FILIAL BA","ct":"LUIZ HENRIQUE DE SALES RODRIGUES","m":"LUIZ HENRIQUE DE SALES RODRIGUES","v":1800.00,"t":"CARRETA"},{"c":"55359","d":"30/04/2026","f":"FILIAL BA","ct":"PAULO SERGIO DOS SANTOS LIMA","m":"PAULO SERGIO DOS SANTOS LIMA","v":1800.00,"t":"CARRETA"},{"c":"55360","d":"30/04/2026","f":"FILIAL BA","ct":"ERIVAL BISPO DE JESUS","m":"ERIVAL BISPO DE JESUS","v":1800.00,"t":"CARRETA"},{"c":"55371","d":"30/04/2026","f":"FILIAL BA","ct":"ADEILSON ALVES DOS SANTOS","m":"ADEILSON ALVES DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55375","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE CARLOS OLIVEIRA DE FREITAS","m":"JOSE CARLOS OLIVEIRA DE FREITAS","v":1800.00,"t":"CARRETA"},{"c":"55376","d":"30/04/2026","f":"FILIAL BA","ct":"EDILSON LIMA SOUZA","m":"EDILSON LIMA SOUZA","v":1800.00,"t":"CARRETA"},{"c":"55378","d":"30/04/2026","f":"FILIAL BA","ct":"MARCOS VINICIUS SANTOS COSTA","m":"MARCOS VINICIUS SANTOS COSTA","v":1800.00,"t":"CARRETA"},{"c":"55380","d":"30/04/2026","f":"FILIAL BA","ct":"VALDECY RIBEIRO COSTA","m":"VALDECY RIBEIRO COSTA","v":1800.00,"t":"CARRETA"},{"c":"55390","d":"30/04/2026","f":"FILIAL BA","ct":"ALDECIR MARTINS DA SILVA","m":"ALDECIR MARTINS DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55393","d":"30/04/2026","f":"FILIAL BA","ct":"HELILTON SILVA SANTOS","m":"HELILTON SILVA SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55397","d":"30/04/2026","f":"FILIAL BA","ct":"ANDRE LUIS CONCEICAO DANTAS","m":"ANDRE LUIS CONCEICAO DANTAS","v":1800.00,"t":"CARRETA"},{"c":"55405","d":"30/04/2026","f":"FILIAL BA","ct":"JULIO CESAR ALVES DOS SANTOS","m":"JULIO CESAR ALVES DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55412","d":"30/04/2026","f":"FILIAL BA","ct":"ALILSON FERREIRA DO NASCIMENTO","m":"ALILSON FERREIRA DO NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"55422","d":"30/04/2026","f":"FILIAL BA","ct":"ERICA FATIMA SOARES DA SILVA","m":"ERICA FATIMA SOARES DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55426","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE AILTON VILAS BOAS DA CONCEICAO","m":"JOSE AILTON VILAS BOAS DA CONCEICAO","v":1800.00,"t":"CARRETA"},{"c":"55429","d":"30/04/2026","f":"FILIAL BA","ct":"CARLOS AUGUSTO SILVA FERREIRA","m":"CARLOS AUGUSTO SILVA FERREIRA","v":1800.00,"t":"CARRETA"},{"c":"55432","d":"30/04/2026","f":"FILIAL BA","ct":"JOSELI OLIVEIRA DOS SANTOS","m":"JOSELI OLIVEIRA DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55436","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE BENEDITO DOS SANTOS","m":"JOSE BENEDITO DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55437","d":"30/04/2026","f":"FILIAL BA","ct":"EDVALDO NASCIMENTO DOS SANTOS","m":"EDVALDO NASCIMENTO DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55438","d":"30/04/2026","f":"FILIAL BA","ct":"MARCOS AURELIO RODRIGUES","m":"MARCOS AURELIO RODRIGUES","v":1800.00,"t":"CARRETA"},{"c":"55440","d":"30/04/2026","f":"FILIAL BA","ct":"DIEGO OLIVEIRA MELO","m":"DIEGO OLIVEIRA MELO","v":1800.00,"t":"CARRETA"},{"c":"55443","d":"30/04/2026","f":"FILIAL BA","ct":"ISAIAS SANTOS LIMA","m":"ISAIAS SANTOS LIMA","v":1800.00,"t":"CARRETA"},{"c":"55451","d":"30/04/2026","f":"FILIAL BA","ct":"EDNEI SOUZA DE JESUS","m":"EDNEI SOUZA DE JESUS","v":1800.00,"t":"CARRETA"},{"c":"55452","d":"30/04/2026","f":"FILIAL BA","ct":"GELZIVALDO RIBEIRO LIMA","m":"GELZIVALDO RIBEIRO LIMA","v":1800.00,"t":"CARRETA"},{"c":"55455","d":"30/04/2026","f":"FILIAL BA","ct":"EDIVALDO SANTOS NASCIMENTO","m":"EDIVALDO SANTOS NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"55456","d":"30/04/2026","f":"FILIAL BA","ct":"NILSON FERREIRA DO NASCIMENTO","m":"NILSON FERREIRA DO NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"55461","d":"30/04/2026","f":"FILIAL BA","ct":"ANTONIO NUNES SOARES NETO","m":"ANTONIO NUNES SOARES NETO","v":1800.00,"t":"CARRETA"},{"c":"55468","d":"30/04/2026","f":"FILIAL BA","ct":"RILDO CONCEICAO SANTOS","m":"RILDO CONCEICAO SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55469","d":"30/04/2026","f":"FILIAL BA","ct":"ALDECIR MARTINS DA SILVA","m":"ALDECIR MARTINS DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55471","d":"30/04/2026","f":"FILIAL BA","ct":"MARCOS VINICIUS DOS SANTOS","m":"MARCOS VINICIUS DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55487","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE RAIMUNDO CALIXTO DO NASCIMENTO","m":"JOSE RAIMUNDO CALIXTO DO NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"55488","d":"30/04/2026","f":"FILIAL BA","ct":"MARCOS AURELIO RODRIGUES","m":"MARCOS AURELIO RODRIGUES","v":1800.00,"t":"CARRETA"},{"c":"55498","d":"30/04/2026","f":"FILIAL BA","ct":"ALILSON FERREIRA DO NASCIMENTO","m":"ALILSON FERREIRA DO NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"55500","d":"30/04/2026","f":"FILIAL BA","ct":"ANDRE LUIS CONCEICAO DANTAS","m":"ANDRE LUIS CONCEICAO DANTAS","v":1800.00,"t":"CARRETA"},{"c":"55507","d":"30/04/2026","f":"FILIAL BA","ct":"ERINALDO SANTOS MENEZES","m":"ERINALDO SANTOS MENEZES","v":1800.00,"t":"CARRETA"},{"c":"55508","d":"30/04/2026","f":"FILIAL BA","ct":"JOSUELSON FERREIRA DE BRITO","m":"JOSUELSON FERREIRA DE BRITO","v":1800.00,"t":"CARRETA"},{"c":"55532","d":"30/04/2026","f":"FILIAL BA","ct":"GILDO SANTOS MAGALHAES","m":"GILDO SANTOS MAGALHAES","v":1800.00,"t":"CARRETA"},{"c":"55537","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE BENEDITO DOS SANTOS","m":"JOSE BENEDITO DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55539","d":"30/04/2026","f":"FILIAL BA","ct":"PAULO JOSE SANTOS LIMA","m":"PAULO JOSE SANTOS LIMA","v":1800.00,"t":"CARRETA"},{"c":"55540","d":"30/04/2026","f":"FILIAL BA","ct":"EVANDRO SANTOS RODRIGUES","m":"EVANDRO SANTOS RODRIGUES","v":1800.00,"t":"CARRETA"},{"c":"55543","d":"30/04/2026","f":"FILIAL BA","ct":"JULIO CESAR ALVES DOS SANTOS","m":"JULIO CESAR ALVES DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55546","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE CARLOS OLIVEIRA DE FREITAS","m":"JOSE CARLOS OLIVEIRA DE FREITAS","v":1800.00,"t":"CARRETA"},{"c":"55547","d":"30/04/2026","f":"FILIAL BA","ct":"HELILTON SILVA SANTOS","m":"HELILTON SILVA SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55549","d":"30/04/2026","f":"FILIAL BA","ct":"ERICA FATIMA SOARES DA SILVA","m":"ERICA FATIMA SOARES DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55553","d":"30/04/2026","f":"FILIAL BA","ct":"DIEGO OLIVEIRA MELO","m":"DIEGO OLIVEIRA MELO","v":1800.00,"t":"CARRETA"},{"c":"55555","d":"30/04/2026","f":"FILIAL BA","ct":"CARLOS AUGUSTO SILVA FERREIRA","m":"CARLOS AUGUSTO SILVA FERREIRA","v":1800.00,"t":"CARRETA"},{"c":"55556","d":"30/04/2026","f":"FILIAL BA","ct":"JOSELI OLIVEIRA DOS SANTOS","m":"JOSELI OLIVEIRA DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55557","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE AILTON VILAS BOAS DA CONCEICAO","m":"JOSE AILTON VILAS BOAS DA CONCEICAO","v":1800.00,"t":"CARRETA"},{"c":"55559","d":"30/04/2026","f":"MATRIZ","ct":"JOSE RAIMUNDO DO NASCIMENTO","m":"JOSE RAIMUNDO DO NASCIMENTO","v":865.00,"t":"CARRETA"},{"c":"55561","d":"30/04/2026","f":"FILIAL BA","ct":"VALDECY RIBEIRO COSTA","m":"VALDECY RIBEIRO COSTA","v":1800.00,"t":"CARRETA"},{"c":"55571","d":"30/04/2026","f":"FILIAL BA","ct":"EDIVALDO SANTOS NASCIMENTO","m":"EDIVALDO SANTOS NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"55572","d":"30/04/2026","f":"FILIAL BA","ct":"ISAIAS SANTOS LIMA","m":"ISAIAS SANTOS LIMA","v":1800.00,"t":"CARRETA"},{"c":"55573","d":"30/04/2026","f":"FILIAL BA","ct":"EDNEI SOUZA DE JESUS","m":"EDNEI SOUZA DE JESUS","v":1800.00,"t":"CARRETA"},{"c":"55575","d":"30/04/2026","f":"FILIAL BA","ct":"GELZIVALDO RIBEIRO LIMA","m":"GELZIVALDO RIBEIRO LIMA","v":1800.00,"t":"CARRETA"},{"c":"55577","d":"30/04/2026","f":"FILIAL BA","ct":"MARCOS VINICIUS SANTOS COSTA","m":"MARCOS VINICIUS SANTOS COSTA","v":1800.00,"t":"CARRETA"},{"c":"55578","d":"30/04/2026","f":"FILIAL BA","ct":"NILSON FERREIRA DO NASCIMENTO","m":"NILSON FERREIRA DO NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"55583","d":"30/04/2026","f":"FILIAL BA","ct":"ANTONIO NUNES SOARES NETO","m":"ANTONIO NUNES SOARES NETO","v":1800.00,"t":"CARRETA"},{"c":"55584","d":"30/04/2026","f":"FILIAL BA","ct":"ADEILSON ALVES DOS SANTOS","m":"ADEILSON ALVES DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55585","d":"30/04/2026","f":"FILIAL BA","ct":"ALUIZIO BISPO DA SILVA","m":"ALUIZIO BISPO DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55590","d":"30/04/2026","f":"FILIAL BA","ct":"LUIZ HENRIQUE DE SALES RODRIGUES","m":"LUIZ HENRIQUE DE SALES RODRIGUES","v":1800.00,"t":"CARRETA"},{"c":"55593","d":"30/04/2026","f":"FILIAL BA","ct":"ALILSON FERREIRA DO NASCIMENTO","m":"ALILSON FERREIRA DO NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"55600","d":"30/04/2026","f":"FILIAL BA","ct":"EDVALDO NASCIMENTO DOS SANTOS","m":"EDVALDO NASCIMENTO DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55605","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE BENEDITO DOS SANTOS","m":"JOSE BENEDITO DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55606","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE RAIMUNDO CALIXTO DO NASCIMENTO","m":"JOSE RAIMUNDO CALIXTO DO NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"55612","d":"30/04/2026","f":"FILIAL BA","ct":"MARCOS VINICIUS DOS SANTOS","m":"MARCOS VINICIUS DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55614","d":"30/04/2026","f":"FILIAL BA","ct":"PAULO SERGIO DOS SANTOS LIMA","m":"PAULO SERGIO DOS SANTOS LIMA","v":1800.00,"t":"CARRETA"},{"c":"55618","d":"30/04/2026","f":"FILIAL BA","ct":"ERIVAL BISPO DE JESUS","m":"ERIVAL BISPO DE JESUS","v":1800.00,"t":"CARRETA"},{"c":"55619","d":"30/04/2026","f":"FILIAL BA","ct":"SEBASTIAO ALVES DE JESUS","m":"SEBASTIAO ALVES DE JESUS","v":1800.00,"t":"CARRETA"},{"c":"55620","d":"30/04/2026","f":"FILIAL BA","ct":"PAULO VICTOR RIBEIRO CAVALCANTE","m":"PAULO VICTOR RIBEIRO CAVALCANTE","v":1800.00,"t":"CARRETA"},{"c":"55621","d":"30/04/2026","f":"FILIAL BA","ct":"CLEITON DOS SANTOS PINHEIRO","m":"CLEITON DOS SANTOS PINHEIRO","v":1800.00,"t":"CARRETA"},{"c":"55622","d":"30/04/2026","f":"MATRIZ","ct":"LAECIO FERREIRA DE SOUZA","m":"LAECIO FERREIRA DE SOUZA","v":1038.00,"t":"CARRETA"},{"c":"55623","d":"30/04/2026","f":"FILIAL BA","ct":"JAQUES AUGUSTO SILVA RAMOS","m":"JAQUES AUGUSTO SILVA RAMOS","v":1800.00,"t":"CARRETA"},{"c":"55630","d":"30/04/2026","f":"FILIAL BA","ct":"JOSUELSON FERREIRA DE BRITO","m":"JOSUELSON FERREIRA DE BRITO","v":1800.00,"t":"CARRETA"},{"c":"55631","d":"30/04/2026","f":"FILIAL BA","ct":"ERINALDO SANTOS MENEZES","m":"ERINALDO SANTOS MENEZES","v":1800.00,"t":"CARRETA"},{"c":"55647","d":"30/04/2026","f":"FILIAL BA","ct":"ALDECIR MARTINS DA SILVA","m":"ALDECIR MARTINS DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55648","d":"30/04/2026","f":"FILIAL BA","ct":"RILDO CONCEICAO SANTOS","m":"RILDO CONCEICAO SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55649","d":"30/04/2026","f":"FILIAL BA","ct":"EVANDRO SANTOS RODRIGUES","m":"EVANDRO SANTOS RODRIGUES","v":1800.00,"t":"CARRETA"},{"c":"55651","d":"30/04/2026","f":"FILIAL BA","ct":"ALILSON FERREIRA DO NASCIMENTO","m":"ALILSON FERREIRA DO NASCIMENTO","v":1800.00,"t":"CARRETA"},{"c":"55653","d":"30/04/2026","f":"FILIAL BA","ct":"MARCOS VINICIUS SANTOS COSTA","m":"MARCOS VINICIUS SANTOS COSTA","v":1800.00,"t":"CARRETA"},{"c":"55654","d":"30/04/2026","f":"FILIAL BA","ct":"HELILTON SILVA SANTOS","m":"HELILTON SILVA SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55655","d":"30/04/2026","f":"FILIAL BA","ct":"ERICA FATIMA SOARES DA SILVA","m":"ERICA FATIMA SOARES DA SILVA","v":1800.00,"t":"CARRETA"},{"c":"55656","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE CARLOS OLIVEIRA DE FREITAS","m":"JOSE CARLOS OLIVEIRA DE FREITAS","v":1800.00,"t":"CARRETA"},{"c":"55657","d":"30/04/2026","f":"FILIAL BA","ct":"ANTONIO NUNES SOARES NETO","m":"ANTONIO NUNES SOARES NETO","v":1800.00,"t":"CARRETA"},{"c":"55658","d":"30/04/2026","f":"FILIAL BA","ct":"CARLOS AUGUSTO SILVA FERREIRA","m":"CARLOS AUGUSTO SILVA FERREIRA","v":1800.00,"t":"CARRETA"},{"c":"55659","d":"30/04/2026","f":"FILIAL BA","ct":"CLEITON DOS SANTOS PINHEIRO","m":"CLEITON DOS SANTOS PINHEIRO","v":1800.00,"t":"CARRETA"},{"c":"55660","d":"30/04/2026","f":"FILIAL BA","ct":"ADEILSON ALVES DOS SANTOS","m":"ADEILSON ALVES DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55662","d":"30/04/2026","f":"FILIAL BA","ct":"JOSE AILTON VILAS BOAS DA CONCEICAO","m":"JOSE AILTON VILAS BOAS DA CONCEICAO","v":1800.00,"t":"CARRETA"},{"c":"55665","d":"30/04/2026","f":"FILIAL BA","ct":"JOSELI OLIVEIRA DOS SANTOS","m":"JOSELI OLIVEIRA DOS SANTOS","v":1800.00,"t":"CARRETA"},{"c":"55666","d":"30/04/2026","f":"FILIAL BA","ct":"ALUIZIO BISPO DA SILVA","m":"ALUIZIO BISPO DA SILVA","v":1800.00,"t":"CARRETA"}];
+
+const PAGE = 20;
+let page = 0, filtered = rows, activeFilial = '';
+
+function fmt(v){ return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+// Sidebar
+const maxQ = Math.max(...byFilial.map(x=>x.q));
+const fl = document.getElementById('filial-list');
+byFilial.forEach(x=>{
+  const div = document.createElement('div');
+  div.className = 'filial-item';
+  div.dataset.f = x.f;
+  div.innerHTML = `<span class="filial-name">${x.f}</span><div class="filial-bar-wrap"><div class="filial-bar" style="width:${(x.q/maxQ*100).toFixed(0)}%"></div></div><span class="filial-count">${x.q}</span>`;
+  div.onclick = ()=>{
+    if(activeFilial===x.f){ activeFilial=''; div.classList.remove('active'); }
+    else { activeFilial=x.f; document.querySelectorAll('.filial-item').forEach(d=>d.classList.remove('active')); div.classList.add('active'); }
+    applyFilters();
+  };
+  fl.appendChild(div);
+});
+
+function applyFilters(){
+  const q = document.getElementById('search').value.toLowerCase();
+  filtered = rows.filter(r=>{
+    const s = !q || r.c.includes(q) || r.ct.toLowerCase().includes(q) || r.m.toLowerCase().includes(q);
+    const f = !activeFilial || r.f===activeFilial;
+    return s && f;
+  });
+  page=0; render();
+}
+
+function render(){
+  const tbody = document.getElementById('tbody');
+  const slice = filtered.slice(page*PAGE, (page+1)*PAGE);
+  if(!slice.length){ tbody.innerHTML=`<tr><td colspan="7" class="empty">Nenhum contrato encontrado.</td></tr>`; }
+  else {
+    tbody.innerHTML = slice.map(r=>`<tr>
+      <td class="num">${r.c}</td>
+      <td>${r.d}</td>
+      <td>${r.f}</td>
+      <td title="${r.ct}">${r.ct}</td>
+      <td title="${r.m}">${r.m}</td>
+      <td class="valor">R$ ${fmt(r.v)}</td>
+      <td>${r.t}</td>
+    </tr>`).join('');
+  }
+  const tot=filtered.length, from=tot?page*PAGE+1:0, to=Math.min((page+1)*PAGE,tot);
+  document.getElementById('pager-info').textContent = `${from}–${to} de ${tot} contratos`;
+  document.getElementById('btn-prev').disabled = page===0;
+  document.getElementById('btn-next').disabled = (page+1)*PAGE>=tot;
+}
+
+function changePage(d){ page+=d; render(); }
+document.getElementById('search').addEventListener('input', applyFilters);
+render();
+</script>
+</body>
+</html>
